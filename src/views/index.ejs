@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div>
+        <h1>Calendar</h1>
+        <p>Plan, adjust, and keep event details in one place.</p>
+      </div>
+      <button id="new-event-button" class="primary-button" type="button">New event</button>
+    </header>
+
+    <section class="calendar-frame" aria-label="Event calendar">
+      <div id="calendar"></div>
+    </section>
+  </main>
+
+  <div id="event-modal" class="modal" aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <h2 id="modal-title">Event</h2>
+        <button class="icon-button" id="close-modal-button" type="button" aria-label="Close">&times;</button>
+      </div>
+
+      <form id="event-form">
+        <input id="event-id" type="hidden">
+
+        <label for="event-title">Title</label>
+        <input id="event-title" name="title" type="text" maxlength="120" required>
+
+        <label for="event-description">Description</label>
+        <textarea id="event-description" name="description" rows="5"></textarea>
+
+        <div class="time-grid">
+          <div>
+            <label for="event-start">Start date and time</label>
+            <input id="event-start" name="start" type="datetime-local" required>
+          </div>
+          <div>
+            <label for="event-end">End date and time</label>
+            <input id="event-end" name="end" type="datetime-local" required>
+          </div>
+        </div>
+
+        <p id="form-error" class="form-error" role="alert"></p>
+
+        <div class="modal-actions">
+          <button id="delete-event-button" class="danger-button" type="button">Delete</button>
+          <div class="action-cluster">
+            <button id="cancel-button" class="secondary-button" type="button">Cancel</button>
+            <button class="primary-button" type="submit">Save</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <script src="/js/calendar.js"></script>
+</body>
+</html>

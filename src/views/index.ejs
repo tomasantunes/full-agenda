@@ -15,11 +15,24 @@
         <h1>Calendar</h1>
         <p>Plan, adjust, and keep event details in one place.</p>
       </div>
-      <button id="new-event-button" class="primary-button" type="button">New event</button>
+      <div class="header-actions">
+        <button id="refresh-changes-button" class="secondary-button" type="button">Refresh changes</button>
+        <button id="new-event-button" class="primary-button" type="button">New event</button>
+      </div>
     </header>
 
     <section class="calendar-frame" aria-label="Event calendar">
       <div id="calendar"></div>
+    </section>
+
+    <section class="changes-panel" aria-labelledby="changes-title">
+      <div class="changes-header">
+        <div>
+          <h2 id="changes-title">Recent changes</h2>
+          <p>Latest 100 event updates, restores, and deletes.</p>
+        </div>
+      </div>
+      <div id="changes-list" class="changes-list" aria-live="polite"></div>
     </section>
   </main>
 

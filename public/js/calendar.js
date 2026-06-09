@@ -3,6 +3,7 @@
   const form = $('#event-form');
   const formError = $('#form-error');
   const deleteButton = $('#delete-event-button');
+  const changesList = $('#changes-list');
   let calendar;
 
   function pad(value) {
@@ -76,6 +77,80 @@
     }, options));
   }
 
+  function formatDateTime(value) {
+    if (!value) {
+      return 'No date';
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(new Date(value));
+  }
+
+  function describeChange(change) {
+    const title = change.after?.title || change.before?.title || 'Untitled event';
+    const actionLabels = {
+      update: 'Updated',
+      delete: 'Deleted',
+      restore: 'Restored'
+    };
+
+    return {
+      title,
+      action: actionLabels[change.action] || change.action,
+      time: formatDateTime(change.changedAt),
+      range: formatDateTime(change.before?.start) + ' to ' + formatDateTime(change.before?.end)
+    };
+  }
+
+  function loadRecentChanges() {
+    changesList.html('<p class="changes-empty">Loading changes...</p>');
+
+    return ajaxJson({
+      url: '/api/events/changes',
+      method: 'GET'
+    }).done(function (changes) {
+      if (!changes.length) {
+        changesList.html('<p class="changes-empty">No changes tracked yet.</p>');
+        return;
+      }
+
+      changesList.empty();
+
+      changes.forEach(function (change) {
+        const details = describeChange(change);
+        const item = $('<article class="change-item"></article>');
+        const body = $('<div></div>');
+        const heading = $('<h3></h3>').text(details.action + ': ' + details.title);
+        const meta = $('<p class="change-meta"></p>').text(details.time + ' | Previous time: ' + details.range);
+        const restoreButton = $('<button class="secondary-button restore-button" type="button">Restore</button>');
+
+        restoreButton.on('click', function () {
+          if (!confirm('Restore this event to the saved previous version?')) {
+            return;
+          }
+
+          ajaxJson({
+            url: '/api/events/changes/' + change.id + '/restore',
+            method: 'POST'
+          }).done(function () {
+            calendar.refetchEvents();
+            loadRecentChanges();
+          }).fail(function (xhr) {
+            alert(xhr.responseJSON?.message || 'Could not restore the event.');
+          });
+        });
+
+        body.append(heading, meta);
+        item.append(body, restoreButton);
+        changesList.append(item);
+      });
+    }).fail(function () {
+      changesList.html('<p class="changes-empty">Could not load recent changes.</p>');
+    });
+  }
+
   function updateEventTimes(info) {
     const fallbackEnd = addDefaultEnd(info.event.start);
 
@@ -90,6 +165,8 @@
     }).fail(function (xhr) {
       info.revert();
       alert(xhr.responseJSON?.message || 'Could not update the event time.');
+    }).done(function () {
+      loadRecentChanges();
     });
   }
 
@@ -136,10 +213,13 @@
     });
 
     calendar.render();
+    loadRecentChanges();
 
     $('#new-event-button').on('click', function () {
       openModal();
     });
+
+    $('#refresh-changes-button').on('click', loadRecentChanges);
 
     $('#close-modal-button, #cancel-button').on('click', closeModal);
 
@@ -170,6 +250,7 @@
       }).done(function () {
         closeModal();
         calendar.refetchEvents();
+        loadRecentChanges();
       }).fail(function (xhr) {
         showError(xhr.responseJSON?.message || 'Could not save the event.');
       });
@@ -188,6 +269,7 @@
       }).done(function () {
         closeModal();
         calendar.refetchEvents();
+        loadRecentChanges();
       }).fail(function (xhr) {
         showError(xhr.responseJSON?.message || 'Could not delete the event.');
       });

@@ -1,7 +1,20 @@
 const express = require('express');
 const Event = require('../models/Event');
+const EventChange = require('../models/EventChange');
 
 const router = express.Router();
+
+function toEventSnapshot(event) {
+  return {
+    title: event.title,
+    description: event.description || '',
+    start: event.start,
+    end: event.end,
+    allDay: event.allDay,
+    createdAt: event.createdAt,
+    updatedAt: event.updatedAt
+  };
+}
 
 function toCalendarEvent(event) {
   return {
@@ -13,6 +26,17 @@ function toCalendarEvent(event) {
     extendedProps: {
       description: event.description || ''
     }
+  };
+}
+
+function toEventChange(change) {
+  return {
+    id: change._id.toString(),
+    eventId: change.eventId.toString(),
+    action: change.action,
+    before: change.before,
+    after: change.after,
+    changedAt: change.changedAt
   };
 }
 
@@ -49,6 +73,48 @@ function parseEventPayload(body) {
     }
   };
 }
+
+router.get('/changes', async (req, res, next) => {
+  try {
+    const changes = await EventChange.find({}).sort({ changedAt: -1 }).limit(100);
+    res.json(changes.map(toEventChange));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/changes/:changeId/restore', async (req, res, next) => {
+  try {
+    const change = await EventChange.findById(req.params.changeId);
+
+    if (!change) {
+      return res.status(404).json({ message: 'Event change not found.' });
+    }
+
+    const current = await Event.findById(change.eventId);
+    const restoredEvent = await Event.findByIdAndUpdate(
+      change.eventId,
+      { $set: change.before },
+      {
+        new: true,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+        upsert: true
+      }
+    );
+
+    await EventChange.create({
+      eventId: restoredEvent._id,
+      action: 'restore',
+      before: current ? toEventSnapshot(current) : change.before,
+      after: toEventSnapshot(restoredEvent)
+    });
+
+    res.json(toCalendarEvent(restoredEvent));
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.get('/', async (req, res, next) => {
   try {
@@ -91,14 +157,23 @@ router.put('/:id', async (req, res, next) => {
       return res.status(400).json({ message: parsed.error });
     }
 
+    const previousEvent = await Event.findById(req.params.id);
+
+    if (!previousEvent) {
+      return res.status(404).json({ message: 'Event not found.' });
+    }
+
     const event = await Event.findByIdAndUpdate(req.params.id, parsed.data, {
       new: true,
       runValidators: true
     });
 
-    if (!event) {
-      return res.status(404).json({ message: 'Event not found.' });
-    }
+    await EventChange.create({
+      eventId: event._id,
+      action: 'update',
+      before: toEventSnapshot(previousEvent),
+      after: toEventSnapshot(event)
+    });
 
     res.json(toCalendarEvent(event));
   } catch (error) {
@@ -120,15 +195,24 @@ router.patch('/:id/times', async (req, res, next) => {
       return res.status(400).json({ message: 'End date and time must be after the start.' });
     }
 
+    const previousEvent = await Event.findById(req.params.id);
+
+    if (!previousEvent) {
+      return res.status(404).json({ message: 'Event not found.' });
+    }
+
     const event = await Event.findByIdAndUpdate(
       req.params.id,
       { start, end, allDay },
       { new: true, runValidators: true }
     );
 
-    if (!event) {
-      return res.status(404).json({ message: 'Event not found.' });
-    }
+    await EventChange.create({
+      eventId: event._id,
+      action: 'update',
+      before: toEventSnapshot(previousEvent),
+      after: toEventSnapshot(event)
+    });
 
     res.json(toCalendarEvent(event));
   } catch (error) {
@@ -143,6 +227,13 @@ router.delete('/:id', async (req, res, next) => {
     if (!event) {
       return res.status(404).json({ message: 'Event not found.' });
     }
+
+    await EventChange.create({
+      eventId: event._id,
+      action: 'delete',
+      before: toEventSnapshot(event),
+      after: null
+    });
 
     res.status(204).send();
   } catch (error) {

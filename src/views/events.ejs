@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div>
+        <h1>Events</h1>
+        <p>All scheduled events in chronological order.</p>
+      </div>
+      <div class="header-actions">
+        <a class="secondary-button button-link" href="/">Calendar</a>
+        <a class="primary-button button-link" href="/api/events/export.txt" download="events.txt">Export TXT</a>
+      </div>
+    </header>
+
+    <section class="table-panel" aria-label="Events table">
+      <% if (events.length) { %>
+        <div class="table-scroll">
+          <table class="events-table">
+            <thead>
+              <tr>
+                <th scope="col">Title</th>
+                <th scope="col">Description</th>
+                <th scope="col">Start date and time</th>
+                <th scope="col">End date and time</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% events.forEach((event) => { %>
+                <tr>
+                  <td><%= event.title %></td>
+                  <td><%= event.description || 'No description' %></td>
+                  <td><%= formatDateTime(event.start) %></td>
+                  <td><%= formatDateTime(event.end) %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <p class="empty-state">No events found.</p>
+      <% } %>
+    </section>
+  </main>
+</body>
+</html>

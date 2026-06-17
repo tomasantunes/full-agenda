@@ -40,6 +40,42 @@ function toEventChange(change) {
   };
 }
 
+function formatExportDateTime(value) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'full',
+    timeStyle: 'short'
+  }).format(value);
+}
+
+function cleanExportText(value, fallback) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  return (text || fallback).replace(/\s+/g, ' ');
+}
+
+function toEventsText(events) {
+  const lines = [
+    'Events',
+    `Generated: ${formatExportDateTime(new Date())}`,
+    `Total events: ${events.length}`,
+    ''
+  ];
+
+  if (!events.length) {
+    lines.push('No events found.');
+    return lines.join('\n');
+  }
+
+  events.forEach((event, index) => {
+    lines.push(`${index + 1}. ${cleanExportText(event.title, 'Untitled event')}`);
+    lines.push(`   Description: ${cleanExportText(event.description, 'No description')}`);
+    lines.push(`   Start: ${formatExportDateTime(event.start)}`);
+    lines.push(`   End: ${formatExportDateTime(event.end)}`);
+    lines.push('');
+  });
+
+  return lines.join('\n');
+}
+
 function parseEventPayload(body) {
   const title = typeof body.title === 'string' ? body.title.trim() : '';
   const description = typeof body.description === 'string' ? body.description.trim() : '';
@@ -111,6 +147,21 @@ router.post('/changes/:changeId/restore', async (req, res, next) => {
     });
 
     res.json(toCalendarEvent(restoredEvent));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/export.txt', async (req, res, next) => {
+  try {
+    const events = await Event.find({}).sort({ start: 1 });
+    const body = toEventsText(events);
+
+    res.set({
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="events.txt"'
+    });
+    res.send(body);
   } catch (error) {
     next(error);
   }

@@ -27,7 +27,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+.button-link {
   font: inherit;
 }
 
@@ -128,6 +129,44 @@ textarea {
   flex: 0 0 auto;
 }
 
+.table-panel {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.events-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.events-table th,
+.events-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.events-table th {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.events-table td {
+  line-height: 1.4;
+}
+
+.empty-state {
+  margin: 0;
+  color: var(--muted);
+}
+
 .primary-button,
 .secondary-button,
 .danger-button,
@@ -135,6 +174,13 @@ textarea {
   border: 0;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .primary-button {

@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 const eventRoutes = require('./src/routes/events');
+const Event = require('./src/models/Event');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -20,6 +21,27 @@ app.get('/', (req, res) => {
   res.render('index', {
     title: 'Calendar'
   });
+});
+
+function formatDateTime(value) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(value);
+}
+
+app.get('/events', async (req, res, next) => {
+  try {
+    const events = await Event.find({}).sort({ start: 1 });
+
+    res.render('events', {
+      title: 'Events',
+      events,
+      formatDateTime
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.use('/api/events', eventRoutes);
